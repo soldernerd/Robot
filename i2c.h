@@ -13,8 +13,8 @@
 #define I2C_SLAVE_ADDRESS_MASK 0b11111111 /*Do not mask any bits*/
 
 //Struct
-#define I2C_SEND_BUFFER_SIZE 11
-#define I2C_RECEIVE_BUFFER_SIZE 8
+#define I2C_SEND_BUFFER_SIZE 16
+#define I2C_RECEIVE_BUFFER_SIZE 16
 typedef struct i2c_
 {
   volatile uint8_t address;
@@ -61,6 +61,16 @@ typedef struct i2c_
 #define RGB_NEUTRAL_GREEN 90
 #define RGB_NEUTRAL_BLUE 50
 
+#define I2C_COMMAND_GREEN_OFF 0x50
+#define I2C_COMMAND_GREEN_ON 0x51
+#define I2C_COMMAND_RED_OFF 0x52
+#define I2C_COMMAND_RED_ON 0x53
+#define I2C_COMMAND_BLUE_OFF 0x54
+#define I2C_COMMAND_BLUE_ON 0x55
+#define I2C_COMMAND_BUZZER_OFF 0x56
+#define I2C_COMMAND_BUZZER_ON 0x57
+
+
 /******************************************************************************
  * Global variables                                                           *
  ******************************************************************************/
@@ -79,6 +89,12 @@ typedef struct i2c_
 void i2c_isr(void);
 void i2c_slave_init(void);
 void i2c_fill_send_buffer(void);
+uint8_t i2c_data_received(void);
+uint8_t i2c_data_sent(void);
+uint8_t* i2c_get_rx_handle(void);
+uint8_t* i2c_get_tx_handle(void);
+
+
 
 #endif	/* I2C_H */
 

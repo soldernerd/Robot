@@ -14,7 +14,7 @@ volatile i2c_struct i2c_data;
 void i2c_isr(void)
 {
   uint8_t tmp;
-  
+
   if(PIR1bits.SSPIF)
   {
     //Master Read Mode -> Sending data
@@ -34,6 +34,7 @@ void i2c_isr(void)
           i2c_data.address = SSPBUF & 0b11111110; //Save address
           i2c_data.ptr = &i2c_data.send_buffer[0]; //Reset buffer pointer
           i2c_data.bytes_sent = 0; //Reset byte counter
+          i2c_fill_send_buffer();
         }
         // Send data
         if(i2c_data.bytes_sent<I2C_SEND_BUFFER_SIZE)
@@ -50,12 +51,20 @@ void i2c_isr(void)
     }
     //Master Transmit Mode -> Receiving data
     else
-    {
+    {  
       //Stop bit
       if(SSPSTATbits.P)
       {
         i2c_data.data_received = 1; //Indicate that data has been received
         SSPCON3bits.PCIE = 0; //Disable Stop detection interrupts
+        
+        //DEBUG!!!
+        if(i2c_data.receive_buffer[0]==0x50)
+            aux1_off();
+        if(i2c_data.receive_buffer[0]==0x51)
+            aux1_on();
+        
+        
       }
       //Not stop bit
       else
@@ -120,7 +129,7 @@ void i2c_slave_init(void)
   
   //SSPSTAT: SSP STATUS REGISTER, p286
   SSPSTATbits.SMP = 1; //Disable slew rate control for high speed mode (400kHz), RaspberryPi uses 100kHz
-  SSPSTATbits.CKE = 0; //Disable SMBus specific inputs
+  SSPSTATbits.CKE = 1; //Enable SMBus specific inputs
   SSPSTATbits.BF = 0; //Clear buffer full status bit
 
   //SSPCON1: SSP CONTROL REGISTER 1, p287
@@ -163,15 +172,38 @@ void i2c_slave_init(void)
  ******************************************************************************/
 void i2c_fill_send_buffer(void)
 {
-//  i2c_data.send_buffer[0] = 0; // Status
-//  i2c_data.send_buffer[1] = white; // White
-//  i2c_data.send_buffer[2] = off; // Off
-//  i2c_data.send_buffer[3] = brightness; // Brightness
-//  i2c_data.send_buffer[4] = color; // Color
-//  i2c_data.send_buffer[5] = red>>7; // Red MSB
-//  i2c_data.send_buffer[6] = red & 0b01111111; // Red LSB
-//  i2c_data.send_buffer[7] = green>>7; // Green MSB
-//  i2c_data.send_buffer[8] = green & 0b01111111; // Green LSB
-//  i2c_data.send_buffer[9] = blue>>7; // Blue MSB
-//  i2c_data.send_buffer[10] = blue & 0b01111111; // Blue LSB
+  i2c_data.send_buffer[0] = 0x55; // Status
+  
+  i2c_data.send_buffer[1] = aux1_is_on(); // Green
+  i2c_data.send_buffer[2] = aux2_is_on();; // Red
+  i2c_data.send_buffer[3] = aux3_is_on();; // Blue
+  i2c_data.send_buffer[4] = aux4_is_on();; // Buzzer
+}
+
+uint8_t i2c_data_received(void)
+{
+    if(i2c_data.data_received)
+    {
+        i2c_data.data_received = 0;
+        return i2c_data.bytes_received; 
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+uint8_t i2c_data_sent(void)
+{
+    return i2c_data.data_sent;
+}
+
+uint8_t* i2c_get_rx_handle(void)
+{
+    return &i2c_data.receive_buffer;
+}
+
+uint8_t* i2c_get_tx_handle(void)
+{
+    return &i2c_data.send_buffer;
 }

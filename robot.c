@@ -100,11 +100,10 @@
 #define SDA_TRIS TRISCbits.TRISC4
 #define VSENSE_TRIS TRISBbits.TRISB3
 
-
 //Global variables
-uint8_t portA = 0x00;
-uint8_t portB = 0x00;
-uint8_t portC = 0x00;
+volatile uint8_t portA = 0x00;
+volatile uint8_t portB = 0x00;
+volatile uint8_t portC = 0x00;
 
 static void reset_on();
 static void reset_off();
@@ -112,87 +111,107 @@ static void motors_on();
 static void motors_off();
 
 
-static void aux1_on();
-static void aux1_off();
-static void aux2_on();
-static void aux2_off();
-static void aux3_on();
-static void aux3_off();
-static void aux4_on();
-static void aux4_off();
+void aux1_on();
+void aux1_off();
+void aux2_on();
+void aux2_off();
+void aux3_on();
+void aux3_off();
+void aux4_on();
+void aux4_off();
 
 void interrupt _isr(void)
 {
     i2c_isr();
 }
 
-static void motors_on()
+static void motors_on(void)
 {
     SLEEP_VARIABLE &= ~SLEEP_MASK;
     SLEEP_PORT = SLEEP_VARIABLE;
 }
 
-static void motors_off()
+static void motors_off(void)
 {
     SLEEP_VARIABLE |= SLEEP_MASK;
     SLEEP_PORT = SLEEP_VARIABLE;
 }
 
-static void reset_on()
+static void reset_on(void)
 {
     RESET_VARIABLE &= ~RESET_MASK;
     RESET_PORT = RESET_VARIABLE;
 }
 
-static void reset_off()
+static void reset_off(void)
 {
     RESET_VARIABLE |= RESET_MASK;
     RESET_PORT = RESET_VARIABLE;
 }
 
-static void aux1_on()
+void aux1_on(void)
 {
     AUX1_VARIABLE |= AUX1_MASK;
     AUX1_PORT = AUX1_VARIABLE;
 }
 
-static void aux1_off()
+void aux1_off(void)
 {
     AUX1_VARIABLE &= ~AUX1_MASK;
     AUX1_PORT = AUX1_VARIABLE;
 }
 
-static void aux2_on()
+uint8_t aux1_is_on(void)
+{
+    return AUX1_VARIABLE & AUX1_MASK;
+}
+
+void aux2_on(void)
 {
     AUX2_VARIABLE |= AUX2_MASK;
     AUX2_PORT = AUX2_VARIABLE;
 }
 
-static void aux2_off()
+void aux2_off(void)
 {
     AUX2_VARIABLE &= ~AUX2_MASK;
     AUX2_PORT = AUX2_VARIABLE;
 }
 
-static void aux3_on()
+uint8_t aux2_is_on(void)
+{
+    return AUX2_VARIABLE & AUX2_MASK;
+}
+
+void aux3_on(void)
 {
     AUX3_VARIABLE |= AUX3_MASK;
     AUX3_PORT = AUX3_VARIABLE;
 }
 
-static void aux3_off()
+void aux3_off(void)
 {
     AUX3_VARIABLE &= ~AUX3_MASK;
     AUX3_PORT = AUX3_VARIABLE;
 }
 
-static void aux4_on()
+uint8_t aux3_is_on(void)
+{
+    return AUX3_VARIABLE & AUX3_MASK;
+}
+
+void aux4_on(void)
 {
     AUX4_VARIABLE |= AUX4_MASK;
     AUX4_PORT = AUX4_VARIABLE;
 }
 
-static void aux4_off()
+uint8_t aux4_is_on(void)
+{
+    return AUX4_VARIABLE & AUX4_MASK;
+}
+
+void aux4_off(void)
 {
     AUX4_VARIABLE &= ~AUX4_MASK;
     AUX4_PORT = AUX4_VARIABLE;
@@ -258,11 +277,19 @@ void setup(void)
     DACCON0bits.DACNSS = 0;
     DACCON1 = 1; //output level
     
-    
     //motors_on();
     reset_on();
     //REF_VARIABLE |= REF_MASK;
     //REF_PORT = REF_VARIABLE;
+
+    //Green
+    aux1_off();
+    //Red
+    aux2_off();
+    //Blue
+    aux3_off();
+    //Buzzer
+    aux4_off();
     
     //Enable I2C
     i2c_slave_init();
@@ -270,12 +297,57 @@ void setup(void)
 
 void main(void)
 {
+    uint8_t bytes_received;
+    uint8_t* rx_buffer;
+    uint8_t cntr;
     uint16_t stepcount = 0;
     uint16_t ledcount = 0;
     setup();
+    rx_buffer = i2c_get_rx_handle();
     
     while(1)
     {
+        __delay_ms(1);
+        
+        bytes_received = i2c_data_received();
+        if(bytes_received)
+        {
+            switch(rx_buffer[1])
+            {
+                case I2C_COMMAND_GREEN_OFF:
+                    aux1_off();
+                    break;
+                case I2C_COMMAND_GREEN_ON:
+                    aux1_on();
+                    break;
+                case I2C_COMMAND_RED_OFF:
+                    aux2_off();
+                    break;
+                case I2C_COMMAND_RED_ON:
+                    aux2_on();
+                    break;
+                case I2C_COMMAND_BLUE_OFF:
+                    aux3_off();
+                    break;
+                case I2C_COMMAND_BLUE_ON:
+                    aux3_on();
+                    break;
+                case I2C_COMMAND_BUZZER_OFF:
+                    aux4_off();
+                    break;
+                case I2C_COMMAND_BUZZER_ON:
+                    aux4_on();
+                    break;
+            }
+        }
+    }
+    return;
+}
+
+
+/*
+        
+        
         STEP_A_VARIABLE ^= STEP_A_MASK;
         STEP_A_PORT = STEP_A_VARIABLE;
         STEP_B_VARIABLE ^= STEP_B_MASK;
@@ -290,37 +362,7 @@ void main(void)
             DIR_A_PORT = DIR_A_VARIABLE;            DIR_B_VARIABLE ^= DIR_B_MASK;
             DIR_B_PORT = DIR_B_VARIABLE;
         }
-        
-        switch((ledcount>>10)&0b11)
-        {
-            case 0:
-                aux1_on();
-                aux2_off();
-                aux3_off();
-                aux4_off();
-                break;
-            case 1:
-                aux1_off();
-                aux2_on();
-                aux3_off();
-                aux4_off();
-                break;
-            case 2:
-                aux1_off();
-                aux2_off();
-                aux3_on();
-                aux4_off();
-                break;
-            case 3:
-                aux1_on();
-                aux2_on();
-                aux3_on();
-                //aux4_on();
-                break;
-        }
-        ++ledcount;
-        //__delay_ms(200);
-    }
+
+*/
     
-    return;
-}
+
