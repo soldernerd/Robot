@@ -7,6 +7,7 @@
 
 #include <xc.h>
 #include <stdint.h>
+#include "common.h"
 #include "i2c.h"
 
 // CONFIG1
@@ -29,76 +30,7 @@
 #pragma config BORV = HI        // Brown-out Reset Voltage Selection (Brown-out Reset Voltage (Vbor), high trip point selected.)
 #pragma config LVP = ON         // Low-Voltage Programming Enable (Low-voltage programming enabled)
 
-#define _XTAL_FREQ 32000000
 
-#define RESET_TRIS TRISCbits.TRISC5
-#define RESET_MASK 0b00100000
-#define RESET_PORT PORTC
-#define RESET_VARIABLE portC
-
-#define SLEEP_TRIS TRISAbits.TRISA1
-#define SLEEP_MASK 0b00000010
-#define SLEEP_PORT PORTA
-#define SLEEP_VARIABLE portA
-
-#define REF_TRIS TRISAbits.TRISA2
-#define REF_MASK 0b00000100
-#define REF_PORT PORTA
-#define REF_VARIABLE portA
-
-#define MS1_TRIS TRISCbits.TRISC7
-#define MS1_MASK 0b10000000
-#define MS1_PORT PORTC
-#define MS1_VARIABLE portC
-
-#define MS2_TRIS TRISCbits.TRISC6
-#define MS2_MASK 0b01000000
-#define MS2_PORT PORTC
-#define MS2_VARIABLE portC
-
-#define DIR_A_TRIS TRISCbits.TRISC0
-#define DIR_A_MASK 0b00000001
-#define DIR_A_PORT PORTC
-#define DIR_A_VARIABLE portC
-
-#define STEP_A_TRIS TRISCbits.TRISC2
-#define STEP_A_MASK 0b00000100
-#define STEP_A_PORT PORTC
-#define STEP_A_VARIABLE portC
-
-#define DIR_B_TRIS TRISAbits.TRISA6
-#define DIR_B_MASK 0b01000000
-#define DIR_B_PORT PORTA
-#define DIR_B_VARIABLE portA
-
-#define STEP_B_TRIS TRISCbits.TRISC1
-#define STEP_B_MASK 0b00000010
-#define STEP_B_PORT PORTC
-#define STEP_B_VARIABLE portC
-
-#define AUX1_TRIS TRISAbits.TRISA4
-#define AUX1_MASK 0b00010000
-#define AUX1_PORT PORTA
-#define AUX1_VARIABLE portA
-
-#define AUX2_TRIS TRISBbits.TRISB5
-#define AUX2_MASK 0b00100000
-#define AUX2_PORT PORTB
-#define AUX2_VARIABLE portB
-
-#define AUX3_TRIS TRISBbits.TRISB4
-#define AUX3_MASK 0b00010000
-#define AUX3_PORT PORTB
-#define AUX3_VARIABLE portB
-
-#define AUX4_TRIS TRISBbits.TRISB0
-#define AUX4_MASK 0b00000001
-#define AUX4_PORT PORTB
-#define AUX4_VARIABLE portB
-
-#define SCL_TRIS TRISCbits.TRISC3
-#define SDA_TRIS TRISCbits.TRISC4
-#define VSENSE_TRIS TRISBbits.TRISB3
 
 //Global variables
 volatile uint8_t portA = 0x00;
@@ -109,17 +41,7 @@ static void reset_on();
 static void reset_off();
 static void motors_on();
 static void motors_off();
-
-
-void aux1_on();
-void aux1_off();
-void aux2_on();
-void aux2_off();
-void aux3_on();
-void aux3_off();
-void aux4_on();
-void aux4_off();
-
+  
 void interrupt _isr(void)
 {
     i2c_isr();
@@ -149,73 +71,6 @@ static void reset_off(void)
     RESET_PORT = RESET_VARIABLE;
 }
 
-void aux1_on(void)
-{
-    AUX1_VARIABLE |= AUX1_MASK;
-    AUX1_PORT = AUX1_VARIABLE;
-}
-
-void aux1_off(void)
-{
-    AUX1_VARIABLE &= ~AUX1_MASK;
-    AUX1_PORT = AUX1_VARIABLE;
-}
-
-uint8_t aux1_is_on(void)
-{
-    return AUX1_VARIABLE & AUX1_MASK;
-}
-
-void aux2_on(void)
-{
-    AUX2_VARIABLE |= AUX2_MASK;
-    AUX2_PORT = AUX2_VARIABLE;
-}
-
-void aux2_off(void)
-{
-    AUX2_VARIABLE &= ~AUX2_MASK;
-    AUX2_PORT = AUX2_VARIABLE;
-}
-
-uint8_t aux2_is_on(void)
-{
-    return AUX2_VARIABLE & AUX2_MASK;
-}
-
-void aux3_on(void)
-{
-    AUX3_VARIABLE |= AUX3_MASK;
-    AUX3_PORT = AUX3_VARIABLE;
-}
-
-void aux3_off(void)
-{
-    AUX3_VARIABLE &= ~AUX3_MASK;
-    AUX3_PORT = AUX3_VARIABLE;
-}
-
-uint8_t aux3_is_on(void)
-{
-    return AUX3_VARIABLE & AUX3_MASK;
-}
-
-void aux4_on(void)
-{
-    AUX4_VARIABLE |= AUX4_MASK;
-    AUX4_PORT = AUX4_VARIABLE;
-}
-
-uint8_t aux4_is_on(void)
-{
-    return AUX4_VARIABLE & AUX4_MASK;
-}
-
-void aux4_off(void)
-{
-    AUX4_VARIABLE &= ~AUX4_MASK;
-    AUX4_PORT = AUX4_VARIABLE;
-}
 
 void setup(void)
 {
@@ -343,26 +198,3 @@ void main(void)
     }
     return;
 }
-
-
-/*
-        
-        
-        STEP_A_VARIABLE ^= STEP_A_MASK;
-        STEP_A_PORT = STEP_A_VARIABLE;
-        STEP_B_VARIABLE ^= STEP_B_MASK;
-        STEP_B_PORT = STEP_B_VARIABLE;
-        __delay_ms(1);
-        ++stepcount;
-        ++ledcount;
-        if(stepcount==1600)
-        {
-            stepcount=0;
-            DIR_A_VARIABLE ^= DIR_A_MASK;
-            DIR_A_PORT = DIR_A_VARIABLE;            DIR_B_VARIABLE ^= DIR_B_MASK;
-            DIR_B_PORT = DIR_B_VARIABLE;
-        }
-
-*/
-    
-

@@ -2,6 +2,7 @@
 #include <xc.h>
 #include <stdint.h>
 #include "i2c.h"
+#include "common.h"
 
 //State variables
 //volatile uint8_t update;
