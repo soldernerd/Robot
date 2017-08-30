@@ -8,6 +8,7 @@
 #include <xc.h>
 #include <stdint.h>
 #include "common.h"
+#include "motor.h"
 #include "i2c.h"
 
 // CONFIG1
@@ -29,7 +30,6 @@
 #pragma config STVREN = ON      // Stack Overflow/Underflow Reset Enable (Stack Overflow or Underflow will cause a Reset)
 #pragma config BORV = HI        // Brown-out Reset Voltage Selection (Brown-out Reset Voltage (Vbor), high trip point selected.)
 #pragma config LVP = ON         // Low-Voltage Programming Enable (Low-voltage programming enabled)
-
 
 
 //Global variables
@@ -130,12 +130,12 @@ void setup(void)
     DACCON0bits.DACOE = 1;
     DACCON0bits.DACPSS = 0b00;
     DACCON0bits.DACNSS = 0;
-    DACCON1 = 1; //output level
+    DACCON1 = 2; //output level
     
-    //motors_on();
-    reset_on();
-    //REF_VARIABLE |= REF_MASK;
-    //REF_PORT = REF_VARIABLE;
+    motors_on();
+    //reset_on();
+    REF_VARIABLE |= REF_MASK;
+    REF_PORT = REF_VARIABLE;
 
     //Green
     aux1_off();
@@ -160,9 +160,24 @@ void main(void)
     setup();
     rx_buffer = i2c_get_rx_handle();
     
+    motor_set_power(5);
+    motor_set_direction(MOTOR_A, DIRECTION_FORWARD);
+    motor_set_direction(MOTOR_B, DIRECTION_FORWARD);
+    
     while(1)
     {
-        __delay_ms(1);
+        //__delay_ms(1);
+        
+        STEP_A_VARIABLE |= STEP_A_MASK;
+        STEP_A_PORT = STEP_A_VARIABLE;
+        STEP_B_VARIABLE |= STEP_B_MASK;
+        STEP_B_PORT = STEP_B_VARIABLE;
+        __delay_ms(2);
+        STEP_A_VARIABLE &= ~STEP_A_MASK;
+        STEP_A_PORT = STEP_A_VARIABLE;
+        STEP_B_VARIABLE &= ~STEP_B_MASK;
+        STEP_B_PORT = STEP_B_VARIABLE;
+        __delay_ms(2);
         
         bytes_received = i2c_data_received();
         if(bytes_received)
