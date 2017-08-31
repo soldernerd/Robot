@@ -36,57 +36,17 @@
 volatile uint8_t portA = 0x00;
 volatile uint8_t portB = 0x00;
 volatile uint8_t portC = 0x00;
-
-static void reset_on();
-static void reset_off();
-static void motors_on();
-static void motors_off();
   
 void interrupt _isr(void)
 {
     i2c_isr();
 }
 
-static void motors_on(void)
-{
-    SLEEP_VARIABLE &= ~SLEEP_MASK;
-    SLEEP_PORT = SLEEP_VARIABLE;
-}
-
-static void motors_off(void)
-{
-    SLEEP_VARIABLE |= SLEEP_MASK;
-    SLEEP_PORT = SLEEP_VARIABLE;
-}
-
-static void reset_on(void)
-{
-    RESET_VARIABLE &= ~RESET_MASK;
-    RESET_PORT = RESET_VARIABLE;
-}
-
-static void reset_off(void)
-{
-    RESET_VARIABLE |= RESET_MASK;
-    RESET_PORT = RESET_VARIABLE;
-}
-
-
 void setup(void)
 {
-  //Set up 32MHz internal oscillator
-  //Pages 74, 83
-  OSCCON = 0b11110000;
-  
-  /*
-  //Configure interrupts
-  IOCBP = ENCODER1_PB | ENCODER2_PB; //Interrupt-on-Change on positive edge
-  IOCBN = ENCODER1_A | ENCODER1_B | ENCODER2_A | ENCODER2_B; //Interrupt-on-Change on negative edge
-  INTCON &= (~INTERRUPT_ON_CHANGE_FLAG); //Clear interrupt flag prior to enable
-  IOCBF = 0; // Clear interrupt-on-change flag
-  INTCON |= INTERRUPT_ON_CHANGE_ENABLE; // Interrupt on change enable bit
-  INTCON |= GLOBAL_INTERRUPT_ENABLE; // Global interrupt enable bit
-  */
+    //Set up 32MHz internal oscillator
+    //Pages 74, 83
+    OSCCON = 0b11110000;
     
     RESET_TRIS = 0;
     SLEEP_TRIS = 0;
@@ -108,22 +68,7 @@ void setup(void)
     SCL_TRIS = 1;
     SDA_TRIS = 1;
     
-    //Full Step Mode
-    MS1_VARIABLE &= ~MS1_MASK;
-    MS1_PORT = MS1_VARIABLE;
-    MS2_VARIABLE &= ~MS2_MASK;
-    MS2_PORT = MS2_VARIABLE;
     
-    //Quarter Step Mode
-    MS1_VARIABLE &= ~MS1_MASK;
-    MS1_PORT = MS1_VARIABLE;
-    MS2_VARIABLE |= MS2_MASK;
-    MS2_PORT = MS2_VARIABLE;
-    
-    RESET_VARIABLE |= RESET_MASK;
-    RESET_PORT = RESET_VARIABLE;
-    //SLEEP_VARIABLE |= SLEEP_MASK;
-    //SLEEP_PORT = SLEEP_VARIABLE;
     
     DACCON0bits.DACEN = 1;
     DACCON0bits.DACLPS = 0;
@@ -132,10 +77,9 @@ void setup(void)
     DACCON0bits.DACNSS = 0;
     DACCON1 = 2; //output level
     
-    motors_on();
     //reset_on();
-    REF_VARIABLE |= REF_MASK;
-    REF_PORT = REF_VARIABLE;
+    //REF_VARIABLE |= REF_MASK;
+    //REF_PORT = REF_VARIABLE;
 
     //Green
     aux1_off();
@@ -160,25 +104,36 @@ void main(void)
     setup();
     rx_buffer = i2c_get_rx_handle();
     
-    motor_set_power(5);
+    motor_set_power(4);
     motor_set_direction(MOTOR_A, DIRECTION_FORWARD);
     motor_set_direction(MOTOR_B, DIRECTION_FORWARD);
     
+    //Set up PWM CCP1
+    PR2 = 0xFF;
+    CCP1CONbits.P1M = 0b00;
+    CCP1CONbits.DC1B = 0b00;
+    CCP1CONbits.CCP1M = 0b1100;
+    CCPTMRS0bits.C1TSEL = 0b00; //Use timer 2
+    T2CONbits.T2OUTPS = 0b1001; //Postscaler=10
+    T2CONbits.T2CKPS = 0b10; //Pre-Scaler = 16
+    T2CONbits.TMR2ON = 1; //Turn timer on
+    T2CONbits.TMR2ON =0; //Turn timer off
+    
+    //Set up PWM CCP2
+    PR4 = 0xFF;
+    CCP2CONbits.P2M = 0b00;
+    CCP2CONbits.DC2B = 0b00;
+    CCP2CONbits.CCP2M = 0b1100;
+    CCPTMRS0bits.C2TSEL = 0b01; //Use timer 4
+    T4CONbits.T4OUTPS = 0b1001; //Postscaler=10
+    T4CONbits.T4CKPS = 0b10; //Pre-Scaler = 16
+    T4CONbits.TMR4ON = 1; //Turn timer on
+    T4CONbits.TMR4ON = 0; //Turn timer off
+    
     while(1)
     {
-        //__delay_ms(1);
-        
-        STEP_A_VARIABLE |= STEP_A_MASK;
-        STEP_A_PORT = STEP_A_VARIABLE;
-        STEP_B_VARIABLE |= STEP_B_MASK;
-        STEP_B_PORT = STEP_B_VARIABLE;
-        __delay_ms(2);
-        STEP_A_VARIABLE &= ~STEP_A_MASK;
-        STEP_A_PORT = STEP_A_VARIABLE;
-        STEP_B_VARIABLE &= ~STEP_B_MASK;
-        STEP_B_PORT = STEP_B_VARIABLE;
-        __delay_ms(2);
-        
+        __delay_ms(1);
+         
         bytes_received = i2c_data_received();
         if(bytes_received)
         {
@@ -207,6 +162,42 @@ void main(void)
                     break;
                 case I2C_COMMAND_BUZZER_ON:
                     aux4_on();
+                    break;
+                case I2C_COMMAND_RESET_OFF:
+                    motor_set_reset(RESET_OFF);
+                    break;
+                case I2C_COMMAND_RESET_ON:
+                    motor_set_reset(RESET_ON);
+                    break;
+                case I2C_COMMAND_SLEEP_OFF:
+                    motor_set_sleep(SLEEPMODE_MOTORS_ON);
+                    break;
+                case I2C_COMMAND_SLEEP_ON:
+                    motor_set_sleep(SLEEPMODE_MOTORS_OFF);
+                    break;
+                case I2C_COMMAND_MOTOR_A_OFF:
+                    motor_run(MOTOR_A, RUNMODE_OFF);
+                    break;
+                case I2C_COMMAND_MOTOR_A_ON:
+                    motor_run(MOTOR_A, RUNMODE_ON);
+                    break;
+                case I2C_COMMAND_MOTOR_B_OFF:
+                    motor_run(MOTOR_B, RUNMODE_OFF);
+                    break;
+                case I2C_COMMAND_MOTOR_B_ON:
+                    motor_run(MOTOR_B, RUNMODE_ON);
+                    break;
+                case I2C_COMMAND_MICROSTEP_FULL:
+                    motor_set_microstepping(STEPSIZE_FULL);
+                    break;
+                case I2C_COMMAND_MICROSTEP_HALF:
+                    motor_set_microstepping(STEPSIZE_HALF);
+                    break;
+                case I2C_COMMAND_MICROSTEP_QUARTER:
+                    motor_set_microstepping(STEPSIZE_QUARTER);
+                    break;
+                case I2C_COMMAND_MICROSTEP_SIXTEENTH:
+                    motor_set_microstepping(STEPSIZE_SIXTEENTH);
                     break;
             }
         }

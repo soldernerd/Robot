@@ -61,6 +61,32 @@ typedef struct i2c_
 #define RGB_NEUTRAL_GREEN 90
 #define RGB_NEUTRAL_BLUE 50
 
+typedef enum
+{
+    //Aux outputs
+    I2C_COMMAND_GREEN_OFF = 0x50,
+    I2C_COMMAND_GREEN_ON = 0x51,
+    I2C_COMMAND_RED_OFF = 0x52,
+    I2C_COMMAND_RED_ON = 0x53,
+    I2C_COMMAND_BLUE_OFF = 0x54,
+    I2C_COMMAND_BLUE_ON = 0x55,
+    I2C_COMMAND_BUZZER_OFF = 0x56,
+    I2C_COMMAND_BUZZER_ON = 0x57,
+    //Motor control
+    I2C_COMMAND_RESET_OFF = 0x60,   
+    I2C_COMMAND_RESET_ON = 0x61, 
+    I2C_COMMAND_SLEEP_OFF = 0x62, 
+    I2C_COMMAND_SLEEP_ON = 0x63,
+    I2C_COMMAND_MOTOR_A_OFF = 0x64,   
+    I2C_COMMAND_MOTOR_A_ON = 0x65, 
+    I2C_COMMAND_MOTOR_B_OFF = 0x66, 
+    I2C_COMMAND_MOTOR_B_ON = 0x67,
+    I2C_COMMAND_MICROSTEP_FULL = 0x68,
+    I2C_COMMAND_MICROSTEP_HALF = 0x69, 
+    I2C_COMMAND_MICROSTEP_QUARTER = 0x6A, 
+    I2C_COMMAND_MICROSTEP_SIXTEENTH = 0x6B 
+} i2c_commands_t;
+/*
 #define I2C_COMMAND_GREEN_OFF 0x50
 #define I2C_COMMAND_GREEN_ON 0x51
 #define I2C_COMMAND_RED_OFF 0x52
@@ -69,6 +95,7 @@ typedef struct i2c_
 #define I2C_COMMAND_BLUE_ON 0x55
 #define I2C_COMMAND_BUZZER_OFF 0x56
 #define I2C_COMMAND_BUZZER_ON 0x57
+*/
 
 
 /******************************************************************************
