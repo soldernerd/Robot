@@ -84,31 +84,19 @@ typedef enum
     I2C_COMMAND_MICROSTEP_FULL = 0x68,
     I2C_COMMAND_MICROSTEP_HALF = 0x69, 
     I2C_COMMAND_MICROSTEP_QUARTER = 0x6A, 
-    I2C_COMMAND_MICROSTEP_SIXTEENTH = 0x6B 
+    I2C_COMMAND_MICROSTEP_SIXTEENTH = 0x6B,
+    I2C_COMMAND_MOTOR_A_FORWARD = 0x6C,      
+    I2C_COMMAND_MOTOR_A_BACKWARD = 0x6D,
+    I2C_COMMAND_MOTOR_B_FORWARD = 0x6E,      
+    I2C_COMMAND_MOTOR_B_BACKWARD = 0x6F, 
+    //2 byte commands
+    I2C_COMMAND_SPEED_A = 0x10,
+    I2C_COMMAND_SPEED_B = 0x11,
+    I2C_COMMAND_POWER = 0x12,
+    //5 byte command
+    I2C_COMMAND_DRIVE = 0x22        
 } i2c_commands_t;
-/*
-#define I2C_COMMAND_GREEN_OFF 0x50
-#define I2C_COMMAND_GREEN_ON 0x51
-#define I2C_COMMAND_RED_OFF 0x52
-#define I2C_COMMAND_RED_ON 0x53
-#define I2C_COMMAND_BLUE_OFF 0x54
-#define I2C_COMMAND_BLUE_ON 0x55
-#define I2C_COMMAND_BUZZER_OFF 0x56
-#define I2C_COMMAND_BUZZER_ON 0x57
-*/
 
-
-/******************************************************************************
- * Global variables                                                           *
- ******************************************************************************/
-//volatile uint8_t white;
-//volatile uint8_t off;
-//volatile uint8_t brightness;
-//volatile uint8_t color;
-
-//uint16_t red;
-//uint16_t green;
-//uint16_t blue;
 
 /******************************************************************************
  * Function prototype                                                         *

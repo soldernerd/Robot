@@ -9,6 +9,10 @@
 #include <xc.h>
 #include "motor.h"
 #include "common.h"
+
+//Module variables
+uint16_t steps_left_a = 0;
+uint16_t steps_left_b = 0;
     
 void motor_set_direction(motor_t mot, direction_t dir)
 {
@@ -60,8 +64,8 @@ void motor_set_microstepping(stepsize_t stepsize)
             MS2_VARIABLE |= MS2_MASK; 
             break;
         case STEPSIZE_SIXTEENTH:
-            MS1_VARIABLE &= ~MS1_MASK;
-            MS2_VARIABLE &= ~MS2_MASK; 
+            MS1_VARIABLE |= MS1_MASK;
+            MS2_VARIABLE |= MS2_MASK; 
             break;
     }
     MS1_PORT = MS1_VARIABLE;
@@ -94,6 +98,46 @@ void motor_set_reset(reset_t reset)
             break;
     }
     RESET_PORT = RESET_VARIABLE;   
+}
+
+void motor_set_speed(motor_t motor, speed_t speed)
+{
+    uint8_t prescaler;
+    uint8_t period;
+    switch(speed)
+    {
+        case SPEED_1:
+            prescaler = 0b11; //64
+            period = 255;
+            break;
+        case SPEED_2:
+            prescaler = 0b11; //64
+            period = 170;
+            break;
+        case SPEED_3:
+            prescaler = 0b11; //64
+            period = 113;
+            break;
+        case SPEED_4:
+            prescaler = 0b11; //64
+            period = 76;
+            break;
+        case SPEED_5:
+            prescaler = 0b10; //64
+            period = 50;
+            break;
+    }
+    switch(motor)
+    {
+        case MOTOR_A:
+            T2CONbits.T2CKPS = prescaler;
+            PR2 = period;
+            break;
+        case MOTOR_B:
+            T4CONbits.T4CKPS = prescaler;
+            PR4 = period;
+            break;
+    }
 }
 
 void motor_run(motor_t motor, runmode_t mode)

@@ -58,14 +58,6 @@ void i2c_isr(void)
       {
         i2c_data.data_received = 1; //Indicate that data has been received
         SSPCON3bits.PCIE = 0; //Disable Stop detection interrupts
-        
-        //DEBUG!!!
-        if(i2c_data.receive_buffer[0]==0x50)
-            aux1_off();
-        if(i2c_data.receive_buffer[0]==0x51)
-            aux1_on();
-        
-        
       }
       //Not stop bit
       else

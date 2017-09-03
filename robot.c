@@ -31,7 +31,6 @@
 #pragma config BORV = HI        // Brown-out Reset Voltage Selection (Brown-out Reset Voltage (Vbor), high trip point selected.)
 #pragma config LVP = ON         // Low-Voltage Programming Enable (Low-voltage programming enabled)
 
-
 //Global variables
 volatile uint8_t portA = 0x00;
 volatile uint8_t portB = 0x00;
@@ -68,18 +67,12 @@ void setup(void)
     SCL_TRIS = 1;
     SDA_TRIS = 1;
     
-    
-    
     DACCON0bits.DACEN = 1;
     DACCON0bits.DACLPS = 0;
     DACCON0bits.DACOE = 1;
     DACCON0bits.DACPSS = 0b00;
     DACCON0bits.DACNSS = 0;
     DACCON1 = 2; //output level
-    
-    //reset_on();
-    //REF_VARIABLE |= REF_MASK;
-    //REF_PORT = REF_VARIABLE;
 
     //Green
     aux1_off();
@@ -98,37 +91,40 @@ void main(void)
 {
     uint8_t bytes_received;
     uint8_t* rx_buffer;
-    uint8_t cntr;
-    uint16_t stepcount = 0;
-    uint16_t ledcount = 0;
+
     setup();
     rx_buffer = i2c_get_rx_handle();
     
-    motor_set_power(4);
-    motor_set_direction(MOTOR_A, DIRECTION_FORWARD);
-    motor_set_direction(MOTOR_B, DIRECTION_FORWARD);
-    
     //Set up PWM CCP1
-    PR2 = 0xFF;
+    //PR2 = 0xFF;
     CCP1CONbits.P1M = 0b00;
     CCP1CONbits.DC1B = 0b00;
     CCP1CONbits.CCP1M = 0b1100;
     CCPTMRS0bits.C1TSEL = 0b00; //Use timer 2
-    T2CONbits.T2OUTPS = 0b1001; //Postscaler=10
+    //T2CONbits.T2OUTPS = 0b1001; //Postscaler=10
     T2CONbits.T2CKPS = 0b10; //Pre-Scaler = 16
     T2CONbits.TMR2ON = 1; //Turn timer on
     T2CONbits.TMR2ON =0; //Turn timer off
     
     //Set up PWM CCP2
-    PR4 = 0xFF;
+    //PR4 = 0xFF;
     CCP2CONbits.P2M = 0b00;
     CCP2CONbits.DC2B = 0b00;
     CCP2CONbits.CCP2M = 0b1100;
     CCPTMRS0bits.C2TSEL = 0b01; //Use timer 4
-    T4CONbits.T4OUTPS = 0b1001; //Postscaler=10
-    T4CONbits.T4CKPS = 0b10; //Pre-Scaler = 16
+    //T4CONbits.T4OUTPS = 0b1111; //Postscaler=10
+    T4CONbits.T4CKPS = 0b11; //Pre-Scaler = 16
     T4CONbits.TMR4ON = 1; //Turn timer on
     T4CONbits.TMR4ON = 0; //Turn timer off
+    
+    motor_set_power(4);
+    motor_set_direction(MOTOR_A, DIRECTION_FORWARD);
+    motor_set_direction(MOTOR_B, DIRECTION_FORWARD);
+    motor_set_sleep(SLEEPMODE_MOTORS_ON);
+    motor_set_reset(RESET_OFF);
+    motor_set_microstepping(STEPSIZE_QUARTER);
+    motor_set_speed(MOTOR_A, SPEED_1);
+    motor_set_speed(MOTOR_B, SPEED_1);
     
     while(1)
     {
@@ -187,6 +183,18 @@ void main(void)
                 case I2C_COMMAND_MOTOR_B_ON:
                     motor_run(MOTOR_B, RUNMODE_ON);
                     break;
+                case I2C_COMMAND_MOTOR_A_FORWARD:
+                    motor_set_direction(MOTOR_A, DIRECTION_FORWARD);
+                    break;    
+                case I2C_COMMAND_MOTOR_A_BACKWARD:
+                    motor_set_direction(MOTOR_A, DIRECTION_BACKWARD);
+                    break;
+                case I2C_COMMAND_MOTOR_B_FORWARD:
+                    motor_set_direction(MOTOR_B, DIRECTION_FORWARD);
+                    break;     
+                case I2C_COMMAND_MOTOR_B_BACKWARD:
+                    motor_set_direction(MOTOR_B, DIRECTION_BACKWARD);
+                    break;
                 case I2C_COMMAND_MICROSTEP_FULL:
                     motor_set_microstepping(STEPSIZE_FULL);
                     break;
@@ -199,6 +207,18 @@ void main(void)
                 case I2C_COMMAND_MICROSTEP_SIXTEENTH:
                     motor_set_microstepping(STEPSIZE_SIXTEENTH);
                     break;
+                case I2C_COMMAND_SPEED_A:
+                    motor_set_speed(MOTOR_A, (speed_t) rx_buffer[2]);
+                    //motor_set_speed(MOTOR_A, SPEED_2);
+                    //motor_run(MOTOR_A, RUNMODE_ON);
+                    break;
+                case I2C_COMMAND_SPEED_B:
+                    motor_set_speed(MOTOR_B, (speed_t) rx_buffer[2]);
+                    //motor_set_speed(MOTOR_A, SPEED_1);
+                    //motor_run(MOTOR_A, RUNMODE_ON);
+                    break;
+                case I2C_COMMAND_POWER:
+                    motor_set_power(rx_buffer[2]);
             }
         }
     }

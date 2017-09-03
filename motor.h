@@ -49,6 +49,14 @@ typedef enum
     RUNMODE_ON
 } runmode_t;
 
+typedef enum
+{
+    SPEED_1 = 1,
+    SPEED_2 = 2,
+    SPEED_3 = 3,
+    SPEED_4 = 4,
+    SPEED_5 = 5
+} speed_t;
 
 //Function prototypes
 
@@ -57,6 +65,7 @@ void motor_set_power(uint8_t power);
 void motor_set_microstepping(stepsize_t stepsize);
 void motor_set_sleep(sleepmode_t mode);
 void motor_set_reset(reset_t reset);
+void motor_set_speed(motor_t motor, speed_t speed);
 void motor_run(motor_t motor, runmode_t mode);
 
 #endif	/* MOTOR_H */
