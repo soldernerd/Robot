@@ -38,7 +38,18 @@ volatile uint8_t portC = 0x00;
   
 void interrupt _isr(void)
 {
-    i2c_isr();
+    if(PIR1bits.SSPIF)
+    {
+        i2c_isr();
+    }
+    if(PIR1bits.TMR2IF)
+    {
+        motor_a_isr();
+    }
+    if(PIR3bits.TMR4IF)
+    {
+        motor_b_isr();
+    }
 }
 
 void setup(void)
@@ -91,6 +102,7 @@ void main(void)
 {
     uint8_t bytes_received;
     uint8_t* rx_buffer;
+    uint16_t tmp;
 
     setup();
     rx_buffer = i2c_get_rx_handle();
@@ -105,6 +117,9 @@ void main(void)
     T2CONbits.T2CKPS = 0b10; //Pre-Scaler = 16
     T2CONbits.TMR2ON = 1; //Turn timer on
     T2CONbits.TMR2ON =0; //Turn timer off
+    //Clear interrupt flag and enable interrupts
+    PIR1bits.TMR2IF = 0;
+    PIE1bits.TMR2IE = 1;
     
     //Set up PWM CCP2
     //PR4 = 0xFF;
@@ -116,13 +131,16 @@ void main(void)
     T4CONbits.T4CKPS = 0b11; //Pre-Scaler = 16
     T4CONbits.TMR4ON = 1; //Turn timer on
     T4CONbits.TMR4ON = 0; //Turn timer off
+    //Clear interrupt flag and enable interrupts
+    PIR3bits.TMR4IF = 0;
+    PIE3bits.TMR4IE = 1;
     
-    motor_set_power(4);
+    motor_set_power(3);
     motor_set_direction(MOTOR_A, DIRECTION_FORWARD);
     motor_set_direction(MOTOR_B, DIRECTION_FORWARD);
     motor_set_sleep(SLEEPMODE_MOTORS_ON);
-    motor_set_reset(RESET_OFF);
-    motor_set_microstepping(STEPSIZE_QUARTER);
+    motor_set_reset(RESET_ON);
+    motor_set_microstepping(STEPSIZE_SIXTEENTH);
     motor_set_speed(MOTOR_A, SPEED_1);
     motor_set_speed(MOTOR_B, SPEED_1);
     
@@ -209,16 +227,25 @@ void main(void)
                     break;
                 case I2C_COMMAND_SPEED_A:
                     motor_set_speed(MOTOR_A, (speed_t) rx_buffer[2]);
-                    //motor_set_speed(MOTOR_A, SPEED_2);
-                    //motor_run(MOTOR_A, RUNMODE_ON);
                     break;
                 case I2C_COMMAND_SPEED_B:
                     motor_set_speed(MOTOR_B, (speed_t) rx_buffer[2]);
-                    //motor_set_speed(MOTOR_A, SPEED_1);
-                    //motor_run(MOTOR_A, RUNMODE_ON);
                     break;
                 case I2C_COMMAND_POWER:
                     motor_set_power(rx_buffer[2]);
+                    break;
+                case I2C_COMMAND_DRIVE:
+                    tmp = rx_buffer[2];
+                    tmp <<= 8;
+                    tmp |= rx_buffer[3];
+                    motor_set_number_of_steps(MOTOR_A, tmp);
+                    tmp = rx_buffer[4];
+                    tmp <<= 8;
+                    tmp |= rx_buffer[5];
+                    motor_set_number_of_steps(MOTOR_B, tmp);
+                    motor_run(MOTOR_A, RUNMODE_ON);
+                    motor_run(MOTOR_B, RUNMODE_ON);
+                    break;
             }
         }
     }

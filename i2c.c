@@ -14,10 +14,8 @@ volatile i2c_struct i2c_data;
  ******************************************************************************/
 void i2c_isr(void)
 {
-  uint8_t tmp;
+    uint8_t tmp;
 
-  if(PIR1bits.SSPIF)
-  {
     //Master Read Mode -> Sending data
     if(SSPSTATbits.R_nW)
     {
@@ -85,7 +83,6 @@ void i2c_isr(void)
     SSPCON1bits.CKP = 1; //Release SCL line
     PIR1bits.SSPIF = 0; //Clear SSP interrupt flag
     return;
-  }
 }
 
 /******************************************************************************

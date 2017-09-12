@@ -59,7 +59,8 @@ typedef enum
 } speed_t;
 
 //Function prototypes
-
+void motor_a_isr(void);
+void motor_b_isr(void);
 void motor_set_direction(motor_t mot, direction_t dir);
 void motor_set_power(uint8_t power);
 void motor_set_microstepping(stepsize_t stepsize);
@@ -67,6 +68,7 @@ void motor_set_sleep(sleepmode_t mode);
 void motor_set_reset(reset_t reset);
 void motor_set_speed(motor_t motor, speed_t speed);
 void motor_run(motor_t motor, runmode_t mode);
+void motor_set_number_of_steps(motor_t motor, uint16_t steps);
 
 #endif	/* MOTOR_H */
 

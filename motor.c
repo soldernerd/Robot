@@ -13,6 +13,40 @@
 //Module variables
 uint16_t steps_left_a = 0;
 uint16_t steps_left_b = 0;
+
+void motor_a_isr(void)
+{
+    if(steps_left_a==0)
+    {
+        //do nothing, just clear flag
+    }
+    else
+    {
+        --steps_left_a;
+        if(steps_left_a == 0)
+        {
+            motor_run(MOTOR_A, RUNMODE_OFF);
+        }
+    }
+    PIR1bits.TMR2IF = 0;
+}
+
+void motor_b_isr(void)
+{
+    if(steps_left_b==0)
+    {
+        //do nothing, just clear flag
+    }
+    else
+    {
+        --steps_left_b;
+        if(steps_left_b == 0)
+        {
+            motor_run(MOTOR_B, RUNMODE_OFF);
+        }
+    }
+    PIR3bits.TMR4IF = 0;
+}
     
 void motor_set_direction(motor_t mot, direction_t dir)
 {
@@ -54,18 +88,26 @@ void motor_set_microstepping(stepsize_t stepsize)
         case STEPSIZE_FULL:
             MS1_VARIABLE &= ~MS1_MASK;
             MS2_VARIABLE &= ~MS2_MASK; 
+            T2CONbits.T2OUTPS = 0b0000;
+            T4CONbits.T4OUTPS = 0b0000;
             break;
         case STEPSIZE_HALF:
             MS1_VARIABLE |= MS1_MASK;
             MS2_VARIABLE &= ~MS2_MASK; 
+            T2CONbits.T2OUTPS = 0b0001;
+            T4CONbits.T4OUTPS = 0b0001;
             break;
         case STEPSIZE_QUARTER:
             MS1_VARIABLE &= ~MS1_MASK;
             MS2_VARIABLE |= MS2_MASK; 
+            T2CONbits.T2OUTPS = 0b0011;
+            T4CONbits.T4OUTPS = 0b0011;
             break;
         case STEPSIZE_SIXTEENTH:
             MS1_VARIABLE |= MS1_MASK;
             MS2_VARIABLE |= MS2_MASK; 
+            T2CONbits.T2OUTPS = 0b1111;
+            T4CONbits.T4OUTPS = 0b1111;
             break;
     }
     MS1_PORT = MS1_VARIABLE;
@@ -149,8 +191,14 @@ void motor_run(motor_t motor, runmode_t mode)
             {
                 case RUNMODE_OFF:
                     T2CONbits.TMR2ON = 0; //Turn timer off
+                    //Put in reset if other motor is already off
+                    if(!T4CONbits.TMR4ON)
+                    {
+                        motor_set_reset(RESET_ON);
+                    }
                     break;
                 case RUNMODE_ON:
+                    motor_set_reset(RESET_OFF);
                     T2CONbits.TMR2ON = 1; //Turn timer on
                     break;
             }
@@ -160,11 +208,30 @@ void motor_run(motor_t motor, runmode_t mode)
             {
                 case RUNMODE_OFF:
                     T4CONbits.TMR4ON = 0; //Turn timer off
+                    //Put in reset if other motor is already off
+                    if(!T2CONbits.TMR2ON)
+                    {
+                        motor_set_reset(RESET_ON);
+                    }
                     break;
                 case RUNMODE_ON:
+                    motor_set_reset(RESET_OFF);
                     T4CONbits.TMR4ON = 1; //Turn timer on
                     break;
             }
             break;
     }
+}
+
+void motor_set_number_of_steps(motor_t motor, uint16_t steps)
+{
+    switch(motor)
+    {
+        case MOTOR_A:
+            steps_left_a = steps;
+            break;
+        case MOTOR_B:
+            steps_left_b = steps;
+            break;
+    }    
 }
