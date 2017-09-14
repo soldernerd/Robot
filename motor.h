@@ -33,14 +33,20 @@ typedef enum
 
 typedef enum
 {
-    SLEEPMODE_MOTORS_OFF,
-    SLEEPMODE_MOTORS_ON
+    ENABLE_LOW,
+    ENABLE_HIGH
+} enable_t;
+
+typedef enum
+{
+    SLEEPMODE_LOW,
+    SLEEPMODE_HIGH
 } sleepmode_t;
 
 typedef enum
 {
-    RESET_OFF,
-    RESET_ON
+    RESET_LOW,
+    RESET_HIGH
 } reset_t;
 
 typedef enum
@@ -64,6 +70,7 @@ void motor_b_isr(void);
 void motor_set_direction(motor_t mot, direction_t dir);
 void motor_set_power(uint8_t power);
 void motor_set_microstepping(stepsize_t stepsize);
+void motor_set_enable(enable_t mode);
 void motor_set_sleep(sleepmode_t mode);
 void motor_set_reset(reset_t reset);
 void motor_set_speed(motor_t motor, speed_t speed);

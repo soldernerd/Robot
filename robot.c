@@ -59,6 +59,7 @@ void setup(void)
     OSCCON = 0b11110000;
     
     RESET_TRIS = 0;
+    ENABLE_TRIS = 0;
     SLEEP_TRIS = 0;
     REF_TRIS = 0;
     MS2_TRIS = 0;
@@ -103,6 +104,7 @@ void main(void)
     uint8_t bytes_received;
     uint8_t* rx_buffer;
     uint16_t tmp;
+    uint16_t motors_idle_count;
 
     setup();
     rx_buffer = i2c_get_rx_handle();
@@ -138,8 +140,9 @@ void main(void)
     motor_set_power(3);
     motor_set_direction(MOTOR_A, DIRECTION_FORWARD);
     motor_set_direction(MOTOR_B, DIRECTION_FORWARD);
-    motor_set_sleep(SLEEPMODE_MOTORS_ON);
-    motor_set_reset(RESET_ON);
+    motor_set_enable(ENABLE_HIGH);
+    motor_set_sleep(SLEEPMODE_HIGH);
+    motor_set_reset(RESET_HIGH);
     motor_set_microstepping(STEPSIZE_SIXTEENTH);
     motor_set_speed(MOTOR_A, SPEED_1);
     motor_set_speed(MOTOR_B, SPEED_1);
@@ -147,6 +150,20 @@ void main(void)
     while(1)
     {
         __delay_ms(1);
+        
+        //Check if motors should be disabled
+        if((!T2CONbits.TMR2ON) || (!T4CONbits.TMR4ON))
+        {
+            ++motors_idle_count;
+            if(motors_idle_count==250)
+            {
+               motor_set_enable(ENABLE_HIGH); 
+            }
+        }
+        else
+        {
+            motors_idle_count = 0;
+        }
          
         bytes_received = i2c_data_received();
         if(bytes_received)
@@ -177,17 +194,23 @@ void main(void)
                 case I2C_COMMAND_BUZZER_ON:
                     aux4_on();
                     break;
-                case I2C_COMMAND_RESET_OFF:
-                    motor_set_reset(RESET_OFF);
+                case I2C_COMMAND_ENABLE_LOW:
+                    motor_set_enable(ENABLE_LOW);
                     break;
-                case I2C_COMMAND_RESET_ON:
-                    motor_set_reset(RESET_ON);
+                case I2C_COMMAND_ENABLE_HIGH:
+                    motor_set_enable(ENABLE_HIGH);
+                    break;    
+                case I2C_COMMAND_RESET_LOW:
+                    motor_set_reset(RESET_LOW);
                     break;
-                case I2C_COMMAND_SLEEP_OFF:
-                    motor_set_sleep(SLEEPMODE_MOTORS_ON);
+                case I2C_COMMAND_RESET_HIGH:
+                    motor_set_reset(RESET_HIGH);
                     break;
-                case I2C_COMMAND_SLEEP_ON:
-                    motor_set_sleep(SLEEPMODE_MOTORS_OFF);
+                case I2C_COMMAND_SLEEP_LOW:
+                    motor_set_sleep(SLEEPMODE_LOW);
+                    break;
+                case I2C_COMMAND_SLEEP_HIGH:
+                    motor_set_sleep(SLEEPMODE_HIGH);
                     break;
                 case I2C_COMMAND_MOTOR_A_OFF:
                     motor_run(MOTOR_A, RUNMODE_OFF);

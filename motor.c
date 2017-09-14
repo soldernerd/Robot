@@ -114,15 +114,29 @@ void motor_set_microstepping(stepsize_t stepsize)
     MS2_PORT = MS2_VARIABLE;
 }
 
+void motor_set_enable(enable_t mode)
+{
+    switch(mode)
+    {
+        case ENABLE_LOW:
+            ENABLE_VARIABLE &= ~ENABLE_MASK;    
+            break;
+        case ENABLE_HIGH:
+            ENABLE_VARIABLE |= ENABLE_MASK; 
+            break;
+    }
+    ENABLE_PORT = ENABLE_VARIABLE;
+}
+
 void motor_set_sleep(sleepmode_t mode)
 {
     switch(mode)
     {
-        case SLEEPMODE_MOTORS_OFF:
-            SLEEP_VARIABLE |= SLEEP_MASK; 
+        case SLEEPMODE_LOW:
+            SLEEP_VARIABLE &= ~SLEEP_MASK;
             break;
-        case SLEEPMODE_MOTORS_ON:
-            SLEEP_VARIABLE &= ~SLEEP_MASK; 
+        case SLEEPMODE_HIGH: 
+            SLEEP_VARIABLE |= SLEEP_MASK; 
             break;
     }
     SLEEP_PORT = SLEEP_VARIABLE;
@@ -132,11 +146,11 @@ void motor_set_reset(reset_t reset)
 {
     switch(reset)
     {
-        case RESET_OFF:
-            RESET_VARIABLE |= RESET_MASK;
-            break;
-        case RESET_ON:
+        case RESET_LOW:
             RESET_VARIABLE &= ~RESET_MASK;
+            break;
+        case RESET_HIGH:
+            RESET_VARIABLE |= RESET_MASK;
             break;
     }
     RESET_PORT = RESET_VARIABLE;   
@@ -144,8 +158,8 @@ void motor_set_reset(reset_t reset)
 
 void motor_set_speed(motor_t motor, speed_t speed)
 {
-    uint8_t prescaler;
-    uint8_t period;
+    uint8_t prescaler = T2CONbits.T2CKPS;
+    uint8_t period = PR4;
     switch(speed)
     {
         case SPEED_1:
@@ -174,10 +188,12 @@ void motor_set_speed(motor_t motor, speed_t speed)
         case MOTOR_A:
             T2CONbits.T2CKPS = prescaler;
             PR2 = period;
+            CCPR1L = (period>>1);
             break;
         case MOTOR_B:
             T4CONbits.T4CKPS = prescaler;
             PR4 = period;
+            CCPR2L = (period>>1);
             break;
     }
 }
@@ -191,14 +207,9 @@ void motor_run(motor_t motor, runmode_t mode)
             {
                 case RUNMODE_OFF:
                     T2CONbits.TMR2ON = 0; //Turn timer off
-                    //Put in reset if other motor is already off
-                    if(!T4CONbits.TMR4ON)
-                    {
-                        motor_set_reset(RESET_ON);
-                    }
                     break;
                 case RUNMODE_ON:
-                    motor_set_reset(RESET_OFF);
+                    motor_set_enable(ENABLE_LOW);
                     T2CONbits.TMR2ON = 1; //Turn timer on
                     break;
             }
@@ -208,14 +219,9 @@ void motor_run(motor_t motor, runmode_t mode)
             {
                 case RUNMODE_OFF:
                     T4CONbits.TMR4ON = 0; //Turn timer off
-                    //Put in reset if other motor is already off
-                    if(!T2CONbits.TMR2ON)
-                    {
-                        motor_set_reset(RESET_ON);
-                    }
                     break;
                 case RUNMODE_ON:
-                    motor_set_reset(RESET_OFF);
+                    motor_set_enable(ENABLE_LOW);
                     T4CONbits.TMR4ON = 1; //Turn timer on
                     break;
             }
